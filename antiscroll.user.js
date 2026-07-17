@@ -1,12 +1,13 @@
 // ==UserScript==
-// @name         Instagram: Hide Reels Tab
-// @description  Removes the Reels tab from Instagram's navigation bar (mobile web & desktop sidebar).
-// @version      1.0
+// @name         Instagram: Hide Reels Tab + No Reel Scrolling
+// @description  Removes the Reels tab from Instagram's navigation bar and disables swiping to further reels in the reel viewer (e.g. reels opened from DMs).
+// @version      1.1
 // @match        https://www.instagram.com/*
 // @match        https://instagram.com/*
 // @run-at       document-start
 // @grant        none
 // @noframes
+// @author       Daniel Ha <downbtn@protonmail.com> + Claude Fable 5
 // ==/UserScript==
 
 (function () {
@@ -61,11 +62,56 @@
     }
   }
 
+  // --- Layer 3: freeze the reel viewer's pager -----------------------------
+  // The reel viewer (opened from a DM, etc.) is a native scroll container
+  // with CSS scroll-snap ("y mandatory") that pages through an endless list
+  // of reels. Forcing overflow-y: hidden on it lets the opened reel play
+  // normally but makes swiping to the next one a no-op. The container is
+  // identified purely by computed style (snap-y + scrollable) + containing a
+  // video, so no generated class names are involved. The page's main
+  // scroller has no snap type and is never touched.
+  function lockReelPagers() {
+    for (const video of document.querySelectorAll('video')) {
+      for (
+        let el = video.parentElement;
+        el && el !== document.body;
+        el = el.parentElement
+      ) {
+        const cs = getComputedStyle(el);
+        if (
+          cs.scrollSnapType.startsWith('y') &&
+          (cs.overflowY === 'scroll' || cs.overflowY === 'auto')
+        ) {
+          // React re-renders can rewrite the style attribute; the observer
+          // below re-runs this and re-locks. The check avoids write loops.
+          if (el.style.getPropertyValue('overflow-y') !== 'hidden') {
+            el.style.setProperty('overflow-y', 'hidden', 'important');
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  // One throttled sweep for both DOM-based layers.
+  let sweepQueued = false;
+  function queueSweep() {
+    if (sweepQueued) return;
+    sweepQueued = true;
+    requestAnimationFrame(() => {
+      sweepQueued = false;
+      hideReelsTabs();
+      lockReelPagers();
+    });
+  }
+
   const start = () => {
-    hideReelsTabs();
-    new MutationObserver(hideReelsTabs).observe(document.body, {
+    queueSweep();
+    new MutationObserver(queueSweep).observe(document.body, {
       childList: true,
       subtree: true,
+      attributes: true,
+      attributeFilter: ['style'],
     });
   };
 
