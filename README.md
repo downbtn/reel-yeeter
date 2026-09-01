@@ -1,12 +1,13 @@
-# anti-scrolling userscript for Instagram
+# Anti-scrolling userscript for Instagram
 
 This script removes the reels tab in the lower nav bar and disables scrolling
-in reels sent over DMs. Currently only targets Safari on iOS 26 with
+in reels sent in DMs. Currently, this has been tested on Safari on iOS 26 with
 [userscripts]([https://github.com/quoid/userscripts), but it _should_ work on
-any userscript-able platform.
+any userscript-able mobile platform.
 
-Instagram's DOM is volatile, so this script may break unexpectedly. It works as
-of 7/16/26.
+Instagram's DOM is volatile, so this script may break unexpectedly. If you find
+that this script no longer works on an iOS device, please create an issue on
+this repo.
 
 ## Installation on iOS 26
 1) Set up [Userscripts](https://github.com/quoid/userscripts#installation).
